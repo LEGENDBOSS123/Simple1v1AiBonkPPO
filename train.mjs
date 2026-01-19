@@ -62,7 +62,7 @@ export async function train(models, batch, epochs, sleep = false) {
     for (let epoch_i = 0; epoch_i < epochs; epoch_i++) {
         optimizerActor.minimize(() => {
             const logits = actor.apply(states);
-            const newLogProbs = logProbsBernoulli(logits, logits);
+            const newLogProbs = logProbsBernoulli(logits, actions);
             const ratio = newLogProbs.sub(oldLogProbs).exp();
 
             const surrogate1 = ratio.mul(normalizedAdvantages);
