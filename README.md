@@ -1,7 +1,7 @@
 ### Simple 1v1 Bonk.io AI 
 This is a project to train AI to learn how to play simple 1v1 with itself.
 Could use same code to train AI on other maps.
-Uses the SAC algorithm
+Uses the PPO algorithm
 
 ### RUN
 To install dependencies, run `npm install`

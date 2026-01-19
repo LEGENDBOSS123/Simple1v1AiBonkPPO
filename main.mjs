@@ -54,7 +54,7 @@ async function main() {
 
         while (true) {
             CONFIG.episodes++;
-            if (memory.size() >= CONFIG.ROLLOUT_STEPS) {
+            if (memory.episodes() >= CONFIG.ROLLOUT_EPISODES) {
                 log("Training...");
 
                 const batch = memory.getAll();
@@ -114,8 +114,9 @@ async function main() {
                 let rewardP1 = rewardCurrentFrame.p1;
 
 
-                if (safeFrames > 500) {
+                if (safeFrames > 45 * 20) {
                     newState.done = true;
+                    rewardP1 -= 0.5;
                 }
 
                 if (lastActionP1 !== null) {

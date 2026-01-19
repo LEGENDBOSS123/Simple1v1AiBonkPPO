@@ -107,8 +107,11 @@ top.saveModels = async function () {
 export async function loadModelFromArtifacts(artifacts) {
     const model = setupModel();
 
-    model.actor.loadWeights(tf.io.decodeWeights(new Float32Array(artifacts.actor.weightData).buffer, artifacts.actor.weightSpecs));
-    model.critic.loadWeights(tf.io.decodeWeights(new Float32Array(artifacts.critic.weightData).buffer, artifacts.critic.weightSpecs));
+    const actorWeights = tf.io.decodeWeights(new Float32Array(artifacts.actor.weightData).buffer, artifacts.actor.weightSpecs);
+    const criticWeights = tf.io.decodeWeights(new Float32Array(artifacts.critic.weightData).buffer, artifacts.critic.weightSpecs);
+    model.actor.loadWeights(actorWeights);
+    model.critic.loadWeights(criticWeights);
+
 
     return model;
 }

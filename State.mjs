@@ -116,9 +116,13 @@ export class State {
         }
 
         const dist = Math.hypot(this.player1.x - this.player2.x, this.player1.y - this.player2.y) * CONFIG.POSITION_NORMALIZATION;
-        const closenessReward = Math.max(0, (1 - dist) * 0.002);
+        // old
+        // const closenessReward = Math.max(0, (1 - dist) * 0.002);
 
-        const timePenalty = 0.005;
+        // const timePenalty = 0.005;
+        const closenessReward = Math.max(0, (1 - dist) * 0.001);
+
+        const timePenalty = 0.0025;
 
         const p1Reward = timePenalty + closenessReward;
         const p2Reward = timePenalty + closenessReward;
