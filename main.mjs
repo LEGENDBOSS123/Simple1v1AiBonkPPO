@@ -66,7 +66,8 @@ async function main() {
                     log(`Loss: ${result.lossActor.toFixed(4)}`);
                     log(`Critic Loss: ${result.lossCritic.toFixed(4)}`);
                 }
-
+                
+                memory.clear();
             }
 
 
