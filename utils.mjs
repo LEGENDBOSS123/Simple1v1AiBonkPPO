@@ -1,0 +1,89 @@
+import { tf } from "./tf.mjs";
+
+
+export function logProbsBernoulli(logits, sampled) {
+    // log(sigmoid(x)) = -softplus(-x)
+    const logSigmoid = tf.softplus(logits.neg()).neg();
+    const logOneMinusSigmoid = tf.softplus(logits).neg();
+    const logProbs = sampled.mul(logSigmoid).add(tf.scalar(1).sub(sampled).mul(logOneMinusSigmoid));
+    return logProbs.sum(-1);
+}
+
+export function logProbabilities(logitsArr, sampledArr) {
+    return tf.tidy(() => {
+        const logits = tf.tensor2d([logitsArr]);
+        const sampled = tf.tensor2d([sampledArr]);
+        const logProbs = logProbsBernoulli(logits, sampled);
+        return logProbs.arraySync()[0];
+    });
+}
+
+export function predictActionArray(model, state) {
+    return tf.tidy(() => {
+        const stateTensor = tf.tensor2d([state]);
+        const prediction = model.actor.predict(stateTensor);
+        const rawAction = prediction.arraySync()[0];
+        return rawAction;
+    });
+}
+
+export function sampleBernoulli(p) {
+    return Math.random() < p ? 1 : 0;
+}
+
+
+export function actionToArray(action) {
+    return [
+        action.left ? 1 : 0,
+        action.right ? 1 : 0,
+        action.up ? 1 : 0,
+        action.down ? 1 : 0,
+        action.heavy ? 1 : 0,
+        // action.special ? 1 : 0,
+    ];
+}
+
+function sigmoid(x) {
+    return 1 / (1 + Math.exp(-x));
+}
+
+export function arrayToAction(logitsArr) {
+    return {
+        left: sampleBernoulli(sigmoid(logitsArr[0])) === 1,
+        right: sampleBernoulli(sigmoid(logitsArr[1])) === 1,
+        up: sampleBernoulli(sigmoid(logitsArr[2])) === 1,
+        down: sampleBernoulli(sigmoid(logitsArr[3])) === 1,
+        heavy: sampleBernoulli(sigmoid(logitsArr[4])) === 1,
+        special: false//sampleBernoulli(sigmoid(logitsArr[5])) === 1
+    }
+    // return {
+    //     left: arr[0] > 0,
+    //     right: arr[1] > 0,
+    //     up: arr[2] > 0,
+    //     down: arr[3] > 0,
+    //     heavy: arr[4] > 0,
+    //     special: false//arr[5] > 0
+    // };
+}
+
+export function randomAction(p = 0.5) {
+    return {
+        left: Math.random() < p,
+        right: Math.random() < p,
+        up: Math.random() < p,
+        down: Math.random() < p,
+        heavy: Math.random() < p,
+        special: false//Math.random() < p
+    };
+}
+
+
+export function entropyBernoulli(logits) {
+    const p = logits.sigmoid();
+    // log(sigmoid(x)) = -softplus(-x)
+    const logSigmoid = tf.softplus(logits.neg()).neg();
+    const logOneMinusSigmoid = tf.softplus(logits).neg();
+    // H = -p*log(p) - (1-p)*log(1-p)
+    const entropy = p.mul(logSigmoid).add(tf.scalar(1).sub(p).mul(logOneMinusSigmoid)).neg();
+    return entropy.sum(-1);
+}
