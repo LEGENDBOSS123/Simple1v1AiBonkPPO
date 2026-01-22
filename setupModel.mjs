@@ -85,10 +85,11 @@ export async function downloadModel(model) {
 }
 
 export async function serializeModels(models, currentModel) {
+    let models2 = [...models];
     if (currentModel) {
-        models.push(currentModel);
+        models2.push(currentModel);
     }
-    const arrayOfModels = models;
+    const arrayOfModels = models2;
 
     const serializedModels = [];
     for (const model of arrayOfModels) {
