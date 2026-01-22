@@ -106,11 +106,11 @@ export class State {
         if (this.winnerId === CONFIG.PLAYER_ONE_ID) {
             return {
                 p1: 1,
-                p2: -0.7
+                p2: -1
             };
         } else if (this.winnerId === CONFIG.PLAYER_TWO_ID) {
             return {
-                p1: -0.7,
+                p1: -1,
                 p2: 1
             };
         }
@@ -120,9 +120,9 @@ export class State {
         // const closenessReward = Math.max(0, (1 - dist) * 0.002);
 
         // const timePenalty = 0.005;
-        const closenessReward = Math.max(0, (1 - dist) * 0.001);
+        const closenessReward = Math.max(0, (1 - dist) * 0.002);
 
-        const timePenalty = 0.0025;
+        const timePenalty = -0.002;
 
         const p1Reward = timePenalty + closenessReward;
         const p2Reward = timePenalty + closenessReward;
@@ -143,7 +143,12 @@ export class State {
     }
 
     toArray() {
-        return [
+        const epsilon = 1e-5;
+        const dx = this.player1.x - this.player2.x;
+        const dy = this.player1.y - this.player2.y;
+        const dist = Math.hypot(dx, dy);
+
+        const state = [
             this.player1.x * CONFIG.POSITION_NORMALIZATION,
             this.player1.y * CONFIG.POSITION_NORMALIZATION,
             this.player1.vx * CONFIG.VELOCITY_NORMALIZATION,
@@ -170,10 +175,15 @@ export class State {
             this.player2.keysPressed.heavy ? 1 : 0,
             // this.player2.keysPressed.special ? 1 : 0,
 
-            CONFIG.POSITION_NORMALIZATION * (this.player1.x - this.player2.x),
-            CONFIG.POSITION_NORMALIZATION * (this.player1.y - this.player2.y),
+            CONFIG.POSITION_NORMALIZATION * dx,
+            CONFIG.POSITION_NORMALIZATION * dy,
             CONFIG.VELOCITY_NORMALIZATION * (this.player1.vx - this.player2.vx),
-            CONFIG.VELOCITY_NORMALIZATION * (this.player1.vy - this.player2.vy)
+            CONFIG.VELOCITY_NORMALIZATION * (this.player1.vy - this.player2.vy),
+            dist * CONFIG.POSITION_NORMALIZATION,
+            dx / (dist + epsilon),
+            dy / (dist + epsilon)
         ];
+
+        return state;
     }
 }

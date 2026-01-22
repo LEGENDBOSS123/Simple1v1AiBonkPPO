@@ -13,11 +13,14 @@ function setupPPOActor() {
             kernelInitializer: 'heNormal',
             name: `actor_dense_${i++}`
         }));
+        if (CONFIG.USE_LAYER_NORM) {
+            model.add(tf.layers.layerNormalization({ name: `actor_norm_${i - 1}` }));
+        }
     }
     model.add(tf.layers.dense({
         units: CONFIG.ACTION_SIZE,
         activation: 'linear',
-        kernelInitializer: 'heNormal',
+        kernelInitializer: 'glorotUniform',
         name: 'actor_output'
     }));
     return model;
@@ -34,11 +37,14 @@ function setupPPOCritic() {
             kernelInitializer: 'heNormal',
             name: `critic_dense_${i++}`
         }));
+        if (CONFIG.USE_LAYER_NORM) {
+            model.add(tf.layers.layerNormalization({ name: `critic_norm_${i - 1}` }));
+        }
     }
     model.add(tf.layers.dense({
         units: 1,
         activation: 'linear',
-        kernelInitializer: 'heNormal',
+        kernelInitializer: 'glorotUniform',
         name: 'critic_output'
     }));
     return model;
@@ -54,7 +60,8 @@ export function setupModel() {
         actor,
         critic,
         optimizerActor,
-        optimizerCritic
+        optimizerCritic,
+        elo: 1000
     };
 }
 
@@ -63,6 +70,7 @@ export function cloneModel(model) {
     const newModel = setupModel();
     newModel.actor.setWeights(model.actor.getWeights());
     newModel.critic.setWeights(model.critic.getWeights());
+    newModel.elo = model.elo ?? newModel.elo;
     return newModel;
 }
 
@@ -88,7 +96,8 @@ export async function serializeModels(models, currentModel) {
         const artifactsCritic = await downloadModel(model.critic);
         const artifacts = {
             actor: artifactsActor,
-            critic: artifactsCritic
+            critic: artifactsCritic,
+            elo: model.elo ?? 1000
         };
         serializedModels.push(artifacts);
     }
@@ -104,6 +113,15 @@ top.saveModels = async function () {
     await saveBrowserFile(json, "models.json");
 }
 
+top.saveModelsString = async function () {
+    const serializedModels = await serializeModels(top.models(), top.currentModel());
+    const json = {
+        models: serializedModels,
+        CONFIG: CONFIG
+    }
+    return json;
+}
+
 export async function loadModelFromArtifacts(artifacts) {
     const model = setupModel();
 
@@ -112,6 +130,9 @@ export async function loadModelFromArtifacts(artifacts) {
     model.actor.loadWeights(actorWeights);
     model.critic.loadWeights(criticWeights);
 
+    if (typeof artifacts.elo === "number") {
+        model.elo = artifacts.elo;
+    }
 
     return model;
 }
