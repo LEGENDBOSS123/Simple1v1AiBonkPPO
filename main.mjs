@@ -32,11 +32,15 @@ function updateElo(modelA, modelB, scoreA) {
     const expectedB = 1 - expectedA;
     const k = CONFIG.ELO_K;
     modelA.elo = modelA.elo + k * (scoreA - expectedA);
-    modelB.elo = modelB.elo + k * (scoreB - expectedB);
+    // do not update opponent elo to keep it frozen
+    // modelB.elo = modelB.elo + k * (scoreB - expectedB);
 }
 
 function chooseOpponentByElo(modelsPool, targetElo) {
     if (modelsPool.length === 0) return null;
+    if (Math.random() < 0.1) {
+        return Random.choose(modelsPool);
+    }
     const weights = modelsPool.map(m => {
         const diff = Math.abs((m.elo ?? 1000) - targetElo);
         return Math.exp(-diff / CONFIG.ELO_DIFF_SCALE);
@@ -98,7 +102,7 @@ async function main() {
                     log(`Loss: ${result.lossActor.toFixed(4)}`);
                     log(`Critic Loss: ${result.lossCritic.toFixed(4)}`);
                 }
-                
+
                 memory.clear();
             }
 
@@ -209,7 +213,6 @@ async function main() {
                         : 0.5;
                 updateElo(currentModel, p2Model, scoreP1);
             }
-
         }
     }
 

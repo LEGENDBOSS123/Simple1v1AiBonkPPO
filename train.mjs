@@ -78,7 +78,11 @@ export async function train(models, batch, epochs, sleep = false) {
                 lastLossActor = totalLoss.dataSync()[0];
             }
             return totalLoss;
-        }, true, actor.trainableWeights.map(w => w.val));
+        });
+        if (sleep) {
+            // let the tab breathe
+            await Time.sleep(25);
+        }
         optimizerCritic.minimize(() => {
             const vals = critic.predict(states).squeeze();
 
@@ -87,9 +91,9 @@ export async function train(models, batch, epochs, sleep = false) {
                 lastLossCritic = closs.dataSync()[0];
             }
             return closs;
-        }, true, critic.trainableWeights.map(w => w.val));
+        });
         if (sleep) {
-            await Time.sleep();
+            await Time.sleep(25);
         }
     }
 

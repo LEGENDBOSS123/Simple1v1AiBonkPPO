@@ -19,7 +19,7 @@ export const CONFIG = {
 
     ENTROPY_COEFFICIENT: 0.05,
     ENTROPY_DECAY: 0.999,
-    MIN_ENTROPY: 0.01,
+    MIN_ENTROPY: 0.025,
 
     CLIP: 0.2,
 
