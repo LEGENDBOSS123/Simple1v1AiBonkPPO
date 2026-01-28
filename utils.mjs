@@ -18,6 +18,27 @@ export function logProbabilities(logitsArr, sampledArr) {
     });
 }
 
+
+function sigmoid(x) {
+    return 1 / (1 + Math.exp(-x));
+}
+
+
+export function nonTFgetEntropy(logits){
+    let entropy = 0;
+    for (let i = 0; i < logits.length; i++) {
+        const p = sigmoid(logits[i]);
+        // H = -p*log(p) - (1-p)*log(1-p)
+        entropy += -p * Math.log(p + 1e-10) - (1 - p) * Math.log(1 - p + 1e-10);
+    }
+    return entropy;
+}
+
+export function mean(x){
+    const sum = x.reduce((a, b) => a + b, 0);
+    return sum / x.length;
+}
+
 export function predictActionArray(model, state) {
     return tf.tidy(() => {
         const stateTensor = tf.tensor2d([state]);
@@ -41,10 +62,6 @@ export function actionToArray(action) {
         action.heavy ? 1 : 0,
         // action.special ? 1 : 0,
     ];
-}
-
-function sigmoid(x) {
-    return 1 / (1 + Math.exp(-x));
 }
 
 export function arrayToAction(logitsArr) {

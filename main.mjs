@@ -9,7 +9,7 @@ import { State } from "./State.mjs";
 import { tf } from "./tf.mjs";
 import { Time } from "./Time.mjs";
 import { train } from "./train.mjs";
-import { actionToArray, arrayToAction, logProbabilities, predictActionArray, randomAction } from "./utils.mjs";
+import { actionToArray, arrayToAction, logProbabilities, mean, nonTFgetEntropy, predictActionArray, randomAction } from "./utils.mjs";
 
 let models = [];
 let currentModel = null;
@@ -142,6 +142,7 @@ async function main() {
             let lastActionP1 = null;
             let lastLogProbP1 = null;
             let lastActionP2 = null;
+            let entropies = [];
             while (true) {
                 CONFIG.steps++;
                 newState = new State();
@@ -151,9 +152,9 @@ async function main() {
                 let rewardP1 = rewardCurrentFrame.p1;
 
 
-                if (safeFrames > 45 * 20) {
+                if (safeFrames > CONFIG.MAX_SECONDS * 20) {
                     newState.done = true;
-                    rewardP1 -= 0.5;
+                    rewardP1 -= CONFIG.DRAW_PENALTY;
                 }
 
                 if (lastActionP1 !== null) {
@@ -182,6 +183,7 @@ async function main() {
 
                 let logits = predictActionArray(currentModel, newState.toArray());
                 top.logits = logits;
+                entropies.push(nonTFgetEntropy(logits));
                 let actionP1 = arrayToAction(logits);
                 move(CONFIG.PLAYER_ONE_ID, actionP1);
                 lastActionP1 = actionToArray(actionP1);
@@ -212,6 +214,8 @@ async function main() {
                         ? 0
                         : 0.5;
                 updateElo(currentModel, p2Model, scoreP1);
+                CONFIG.elos.push(currentModel.elo);
+                CONFIG.entropies.push(mean(entropies));
             }
         }
     }

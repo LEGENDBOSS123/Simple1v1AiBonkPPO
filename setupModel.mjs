@@ -61,7 +61,7 @@ export function setupModel() {
         critic,
         optimizerActor,
         optimizerCritic,
-        elo: 1000
+        elo: CONFIG.START_ELO
     };
 }
 
@@ -98,7 +98,7 @@ export async function serializeModels(models, currentModel) {
         const artifacts = {
             actor: artifactsActor,
             critic: artifactsCritic,
-            elo: model.elo ?? 1000
+            elo: model.elo
         };
         serializedModels.push(artifacts);
     }
