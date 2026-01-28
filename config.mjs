@@ -39,7 +39,7 @@ export const CONFIG = {
     // reward
     WIN: 1,
     LOSS: -0.67,
-    TIME_PENALTY: -0.001,
+    TIME_PENALTY: 0,
     DRAW_PENALTY: -1.0,
 
     // runtime params
