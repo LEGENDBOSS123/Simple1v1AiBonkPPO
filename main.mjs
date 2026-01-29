@@ -27,9 +27,9 @@ function expectedScore(eloA, eloB) {
 }
 
 function updateElo(modelA, modelB, scoreA) {
-    const scoreB = 1 - scoreA;
+    // const scoreB = 1 - scoreA;
     const expectedA = expectedScore(modelA.elo, modelB.elo);
-    const expectedB = 1 - expectedA;
+    // const expectedB = 1 - expectedA;
     const k = CONFIG.ELO_K;
     modelA.elo = modelA.elo + k * (scoreA - expectedA);
     // do not update opponent elo to keep it frozen
@@ -137,7 +137,7 @@ async function main() {
                         p2Model = chooseOpponentByElo(models, currentModel.elo);
                     }
                     else if (rand < 0.85) {
-                        p2Model = Random.choose(modelsPool);
+                        p2Model = Random.choose(models);
                     }
                     else {
                         p2Model = currentModel;
