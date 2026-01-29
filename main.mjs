@@ -38,9 +38,6 @@ function updateElo(modelA, modelB, scoreA) {
 
 function chooseOpponentByElo(modelsPool, targetElo) {
     if (modelsPool.length === 0) return null;
-    if (Math.random() < 0.1) {
-        return Random.choose(modelsPool);
-    }
     const weights = modelsPool.map(m => {
         const diff = Math.abs((m.elo ?? 1000) - targetElo);
         return Math.exp(-diff / CONFIG.ELO_DIFF_SCALE);
@@ -135,7 +132,16 @@ async function main() {
 
             if (models.length > 0) {
                 if (CONFIG.episodes % CONFIG.SWITCH_OPPONENT_EVERY_EPISODES === 0) {
-                    p2Model = chooseOpponentByElo(models, currentModel.elo ?? 1000);
+                    const rand = Math.random();
+                    if (rand < 0.7) {
+                        p2Model = chooseOpponentByElo(models, currentModel.elo);
+                    }
+                    else if (rand < 0.85) {
+                        p2Model = Random.choose(modelsPool);
+                    }
+                    else {
+                        p2Model = currentModel;
+                    }
                 }
             }
 
