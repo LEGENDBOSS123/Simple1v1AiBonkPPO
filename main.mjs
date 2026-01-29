@@ -87,20 +87,26 @@ async function main() {
                 CONFIG.ENTROPY_COEFFICIENT * CONFIG.ENTROPY_DECAY
             );
 
-            if (memory.episodes() >= CONFIG.ROLLOUT_EPISODES) {
-                log("Training...");
-
-                const batch = memory.getAll();
-
-                let result = null;
-                result = await train(currentModel, batch, CONFIG.EPOCHS, true);
-                if (result) {
-                    losses.push(result.lossActor);
-                    log(`Loss: ${result.lossActor.toFixed(4)}`);
-                    log(`Critic Loss: ${result.lossCritic.toFixed(4)}`);
+            if (CONFIG.episodes % CONFIG.ROLLOUT_EPISODES == 0 && CONFIG.episodes > 0) {
+                if (memory.episodes() < CONFIG.ROLLOUT_EPISODES - 1) {
+                    log("Not enough episodes in memory to train.");
+                    memory.clear();
                 }
+                else {
+                    log("Training...");
 
-                memory.clear();
+                    const batch = memory.getAll();
+
+                    let result = null;
+                    result = await train(currentModel, batch, CONFIG.EPOCHS, true);
+                    if (result) {
+                        losses.push(result.lossActor);
+                        log(`Loss: ${result.lossActor.toFixed(4)}`);
+                        log(`Critic Loss: ${result.lossCritic.toFixed(4)}`);
+                    }
+
+                    memory.clear();
+                }
             }
 
 
