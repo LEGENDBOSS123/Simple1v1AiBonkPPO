@@ -139,10 +139,10 @@ async function main() {
             if (models.length > 0) {
                 if (CONFIG.episodes % CONFIG.SWITCH_OPPONENT_EVERY_EPISODES === 0) {
                     const rand = Math.random();
-                    if (rand < 0.7) {
+                    if (rand < 0.5) {
                         p2Model = chooseOpponentByElo(models, currentModel.elo);
                     }
-                    else if (rand < 0.85) {
+                    else if (rand < 0.75) {
                         p2Model = Random.choose(models);
                     }
                     else {

@@ -9,8 +9,8 @@ function setupPPOActor() {
     for (const layerLength of CONFIG.ACTOR_LAYER_LENGTHS) {
         model.add(tf.layers.dense({
             units: layerLength,
-            activation: 'relu',
-            kernelInitializer: 'heNormal',
+            activation: 'tanh',
+            kernelInitializer: 'glorotUniform',
             name: `actor_dense_${i++}`
         }));
         if (CONFIG.USE_LAYER_NORM) {
@@ -33,8 +33,8 @@ function setupPPOCritic() {
     for (const layerLength of CONFIG.CRITIC_LAYER_LENGTHS) {
         model.add(tf.layers.dense({
             units: layerLength,
-            activation: 'relu',
-            kernelInitializer: 'heNormal',
+            activation: 'tanh',
+            kernelInitializer: 'glorotUniform',
             name: `critic_dense_${i++}`
         }));
         if (CONFIG.USE_LAYER_NORM) {
