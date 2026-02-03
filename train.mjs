@@ -1,4 +1,5 @@
 import { CONFIG } from "./config.mjs";
+import { log } from "./log.mjs";
 import { tf } from "./tf.mjs";
 import { Time } from "./Time.mjs";
 import { entropyBernoulli, logProbsBernoulli } from "./utils.mjs";
@@ -43,6 +44,8 @@ export async function train(models, batch, epochs, sleep = false) {
     if (sleep) {
         await Time.sleep(25);
     }
+    
+    log("Calculating advantages");
 
     const advantages = tf.tensor1d(calculateGAE(
         batch.map(b => b.reward),
@@ -57,6 +60,7 @@ export async function train(models, batch, epochs, sleep = false) {
         await Time.sleep(25);
     }
 
+    log("Normalizing advantages");
     const normalizedAdvantages = tf.tidy(() => {
         // normalized_a = (a-mean)/std
         const { mean, variance } = tf.moments(advantages);
@@ -72,6 +76,8 @@ export async function train(models, batch, epochs, sleep = false) {
 
     const returns = advantages.add(values);
 
+    log("Starting training epochs");
+
     for (let epoch_i = 0; epoch_i < epochs; epoch_i++) {
         // Shuffle indices for mini-batching
         const indices = Array.from({ length: batch.length }, (_, i) => i);
@@ -86,6 +92,7 @@ export async function train(models, batch, epochs, sleep = false) {
         let epochCriticLoss = 0;
 
         for (let mb = 0; mb < numMiniBatches; mb++) {
+            log("Epoch", epoch_i + 1, "Mini-batch", mb + 1, "of", numMiniBatches);
             const start = mb * miniBatchSize;
             const end = Math.min(start + miniBatchSize, batch.length);
             const mbIndices = indices.slice(start, end);
@@ -143,11 +150,13 @@ export async function train(models, batch, epochs, sleep = false) {
     if (sleep) {
         await Time.sleep(25);
     }
+    log("Disposing tensors");
     tf.dispose([states, nextStates, actions, rewards, notDones, oldLogProbs,
         values, nextValues, advantages, normalizedAdvantages, returns]);
     if (sleep) {
         await Time.sleep(25);
     }
+    log("Training complete");
     return {
         lossActor: lastLossActor,
         lossCritic: lastLossCritic
