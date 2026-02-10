@@ -1,6 +1,7 @@
 .vscode/
 node_modules/
 script.js
+play.js
 models*.json
 .DS_Store
 *.json.gz
