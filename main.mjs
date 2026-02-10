@@ -129,7 +129,6 @@ async function main() {
                 top.startGame();
                 await Time.sleep(1500);
 
-
                 lastState = new State();
                 lastState.fetch();
             } catch (e) {

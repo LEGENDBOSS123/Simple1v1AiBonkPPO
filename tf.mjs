@@ -1,5 +1,11 @@
 import * as tf from '@tensorflow/tfjs';
-tf.setBackend('webgl');
+if (tf.findBackend('webgpu')) {
+    tf.setBackend('webgpu');
+    console.log("🚀 Using WebGPU backend!");
+} else {
+    tf.setBackend('webgl');
+    console.log("⚠️ WebGPU not found, falling back to WebGL.");
+}
 top.tf = tf;
 
 export { tf };
