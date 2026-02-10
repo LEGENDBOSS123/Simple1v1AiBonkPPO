@@ -16,7 +16,7 @@ top.RECIEVEFUNCTION = function (args) {
     }
     return args;
 }
-let lastMove = {left: false, right: false, up: false, down: false, heavy: false, special: false};
+let lastMove = { left: false, right: false, up: false, down: false, heavy: false, special: false };
 function playMove(moves) {
     // moves = [left, right, up, down, heavy]
     const keys = {
@@ -27,7 +27,7 @@ function playMove(moves) {
         heavy: moves[4],
         special: false
     };
-    
+
     top.presskeys(lastMove, keys);
     keyMap.set(top.myid, top.MAKE_KEYS(keys));
     lastMove = structuredClone(keys);
@@ -83,15 +83,23 @@ async function main() {
                 [CONFIG.PLAYER_ONE_ID, CONFIG.PLAYER_TWO_ID] = ids;
                 const state = new State();
                 state.fetch();
-                const moves = tf.tidy(() => {
-                    const stateArray = state.toArray();
-                    const stateTensor = tf.tensor2d([stateArray]);
+                const stateArray = state.toArray();
+
+                // 1. Create tensor manually
+                const stateTensor = tf.tensor2d([stateArray]);
+
+                try {
                     const logits = top.actorModel.predict(stateTensor);
-                    const logitsArray = logits.arraySync()[0];
-                    const moves = logitsArray.map(x => x > 0);
-                    return moves;
-                });
-                playMove(moves);
+                    const logitsArray = await logits.array();
+                    const firstBatch = logitsArray[0];
+                    const moves = firstBatch.map(x => x > 0);
+                    playMove(moves);
+
+                } catch (err) {
+                    console.error("Prediction error:", err);
+                } finally {
+                    stateTensor.dispose();
+                }
             }
         }
         await Time.sleep(80);

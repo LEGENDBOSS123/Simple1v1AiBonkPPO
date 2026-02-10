@@ -52,6 +52,7 @@ function chooseOpponentByElo(modelsPool, targetElo) {
 }
 
 async function setup() {
+    await Time.sleep(500);
     const filePrompt = prompt("Do you want to load a model from file? (y/n)", "n") == "y";
     const filedata = filePrompt ? await loadBrowserFile() : null;
     if (filedata) {
@@ -207,16 +208,16 @@ async function main() {
                     break;
                 }
 
-                let logits = predictActionArray(currentModel, newState.toArray());
+                let logits = await predictActionArray(currentModel, newState.toArray());
                 top.logits = logits;
                 entropies.push(nonTFgetEntropy(logits));
                 let actionP1 = arrayToAction(logits);
                 move(CONFIG.PLAYER_ONE_ID, actionP1);
                 lastActionP1 = actionToArray(actionP1);
-                lastLogProbP1 = logProbabilities(logits, lastActionP1);
+                lastLogProbP1 = await logProbabilities(logits, lastActionP1);
 
 
-                let logits2 = predictActionArray(p2Model, newState.flip().toArray());
+                let logits2 = await predictActionArray(p2Model, newState.flip().toArray());
                 let actionP2 = arrayToAction(logits2);
                 if (CONFIG.episodes < CONFIG.WARM_UP_EPISODES) {
                     actionP2 = randomAction(0);
