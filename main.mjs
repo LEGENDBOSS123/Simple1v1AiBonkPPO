@@ -3,7 +3,7 @@ import { log } from "./log.mjs";
 import { move } from "./move.mjs";
 import { Random } from "./Random.mjs";
 import { ReplayBuffer } from "./ReplayBuffer.mjs";
-import { setupLobby } from "./setupLobby.mjs";
+import { createLobby, setupLobby } from "./setupLobby.mjs";
 import { cloneModel, deserializeModels, loadBrowserFile, setupModel } from "./setupModel.mjs";
 import { State } from "./State.mjs";
 import { tf } from "./tf.mjs";
@@ -119,16 +119,25 @@ async function main() {
                 top.lastSave = await top.saveModelsString();
             }
             lastEpisodeLength = 0;
-
-            // match start
-            top.startGame();
-            await Time.sleep(1500);
-
             // 20 TPS
             let TPS = 1000 / 20;
 
-            let lastState = new State();
-            lastState.fetch();
+            let lastState;
+            // match start
+
+            try {
+                top.startGame();
+                await Time.sleep(1500);
+
+
+                lastState = new State();
+                lastState.fetch();
+            } catch (e) {
+                log("Error starting game or fetching initial state:", e);
+                await createLobby();
+                await Time.sleep(1500);
+                continue;
+            }
             await Time.sleep(TPS);
 
             let newState;
@@ -158,8 +167,14 @@ async function main() {
             while (true) {
                 CONFIG.steps++;
                 newState = new State();
-                newState.fetch();
-
+                try {
+                    newState.fetch();
+                } catch (e) {
+                    memory.buffer.at(-1).done = true;
+                    await createLobby();
+                    await Time.sleep(1500);
+                    break;
+                }
                 let rewardCurrentFrame = newState.reward();
                 let rewardP1 = rewardCurrentFrame.p1;
 

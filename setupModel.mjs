@@ -83,7 +83,59 @@ export async function downloadModel(model) {
     artifacts.weightData = Array.from(new Float32Array(artifacts.weightData));
     return artifacts;
 }
+export async function downloadOptimizer(optimizer) {
+    // 1. Get the configuration (learning rate, decay, beta1, etc.)
+    const config = optimizer.getConfig();
 
+    // 2. Get the current state weights (tensors)
+    // These contain the iteration count, momentum, accumulated gradients, etc.
+    const weightTensors = optimizer.getWeights();
+
+    // 3. Serialize the weights
+    // We map over the tensors to extract their data asynchronously
+    const weightData = await Promise.all(
+        weightTensors.map(async (tensor) => {
+            const data = await tensor.data();
+            // Convert Float32Array to standard Array for JSON compatibility
+            return Array.from(data);
+        })
+    );
+    
+    // We don't need to save shapes explicitly because optimizer weights 
+    // are loaded by index, not by name or shape matching.
+    
+    return {
+        className: optimizer.getClassName(), // e.g., 'Adam', 'SGD'
+        config: config,
+        weightData: weightData
+    };
+}
+export function restoreOptimizer(optimizerArtifacts) {
+    // 1. Recreate the optimizer using the saved config and class name
+    // (This works for built-in optimizers like Adam, SGD, RMSProp)
+    const optimizerConstructor = tf.train[optimizerArtifacts.className.toLowerCase()]; // e.g. tf.train.adam
+    
+    if (!optimizerConstructor) {
+        throw new Error(`Unknown optimizer: ${optimizerArtifacts.className}`);
+    }
+
+    const optimizer = optimizerConstructor(optimizerArtifacts.config);
+
+    // 2. Convert standard arrays back to Tensors
+    // Note: Optimizer weights are often scalars or 1D, so we generally rely on 
+    // setWeights handling the shape inference or just passing the data.
+    const weightTensors = optimizerArtifacts.weightData.map(data => 
+        tf.tensor(data)
+    );
+
+    // 3. Set the optimizer weights (restoring the state)
+    optimizer.setWeights(weightTensors);
+    
+    // Clean up the temporary tensors created for setWeights
+    weightTensors.forEach(t => t.dispose());
+    
+    return optimizer;
+}
 export async function serializeModels(models, currentModel) {
     let models2 = [...models];
     if (currentModel) {
@@ -95,9 +147,13 @@ export async function serializeModels(models, currentModel) {
     for (const model of arrayOfModels) {
         const artifactsActor = await downloadModel(model.actor);
         const artifactsCritic = await downloadModel(model.critic);
+        const artifactsOptimizerActor = await downloadOptimizer(model.optimizerActor);
+        const artifactsOptimizerCritic = await downloadOptimizer(model.optimizerCritic);
         const artifacts = {
             actor: artifactsActor,
             critic: artifactsCritic,
+            actor_optimizer: artifactsOptimizerActor,
+            critic_optimizer: artifactsOptimizerCritic,
             elo: model.elo
         };
         serializedModels.push(artifacts);
@@ -130,6 +186,11 @@ export async function loadModelFromArtifacts(artifacts) {
     const criticWeights = tf.io.decodeWeights(new Float32Array(artifacts.critic.weightData).buffer, artifacts.critic.weightSpecs);
     model.actor.loadWeights(actorWeights);
     model.critic.loadWeights(criticWeights);
+
+    if(artifacts.actor_optimizer && artifacts.critic_optimizer) {
+        model.optimizerActor = restoreOptimizer(artifacts.actor_optimizer);
+        model.optimizerCritic = restoreOptimizer(artifacts.critic_optimizer);
+    }
 
     if (typeof artifacts.elo === "number") {
         model.elo = artifacts.elo;

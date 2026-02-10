@@ -132,6 +132,7 @@ export async function train(models, batch, epochs, sleep = false) {
                 return closs;
             }, true);
 
+            
             if (epoch_i === epochs - 1 && mb === numMiniBatches - 1) {
                 epochCriticLoss = (await criticLoss.data())[0];
             } else {

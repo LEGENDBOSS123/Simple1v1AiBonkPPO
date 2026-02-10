@@ -3,9 +3,6 @@ import { map } from "./getMap.mjs";
 import { Time } from "./Time.mjs";
 
 export async function setupLobby() {
-    if (top.settedUpLobby) {
-        return;
-    }
     top.changemode("b");
     top.commandhandle("/sandbox");
     top.commandhandle("/addname Side Character");
@@ -22,5 +19,10 @@ export async function setupLobby() {
     top.SEND(`42[26,{"targetID":${CONFIG.PLAYER_ONE_ID},"targetTeam":1}]`);
     top.SEND(`42[26,{"targetID":${CONFIG.PLAYER_TWO_ID},"targetTeam":1}]`);
     await Time.sleep(500);
-    top.settedUpLobby = true;
+}
+
+export async function createLobby() {
+    top.Gdocument.getElementById("classic_mid_sandbox").click();
+    top.Gdocument.getElementById("roomlistcreatecreatebutton").click();
+    await setupLobby();
 }
