@@ -1,3 +1,4 @@
+import '@tensorflow/tfjs-backend-webgpu';
 import * as tf from '@tensorflow/tfjs';
 if (tf.findBackend('webgpu')) {
     tf.setBackend('webgpu');
