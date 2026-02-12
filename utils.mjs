@@ -10,19 +10,14 @@ export function logProbsBernoulli(logits, sampled) {
 }
 
 export async function logProbabilities(logitsArr, sampledArr) {
-    const logits = tf.tensor2d([logitsArr]);
-    const sampled = tf.tensor2d([sampledArr]);
-
-    try {
-        const logProbs = logProbsBernoulli(logits, sampled);
-
-        const result = await logProbs.array();
-
-        return result[0];
-    } finally {
-        logits.dispose();
-        sampled.dispose();
-    }
+    const logProbs = tf.tidy(() => {
+        const logits = tf.tensor2d([logitsArr]);
+        const sampled = tf.tensor2d([sampledArr]);
+        return logProbsBernoulli(logits, sampled);
+    });
+    const result = await logProbs.array();
+    logProbs.dispose();
+    return result[0];
 }
 
 function sigmoid(x) {
@@ -46,15 +41,14 @@ export function mean(x) {
 }
 
 export async function predictActionArray(model, state) {
-    const stateTensor = tf.tensor2d([state]);
-
-    try {
+    const rawAction = tf.tidy(() => {
+        const stateTensor = tf.tensor2d([state]);
         const prediction = model.actor.predict(stateTensor);
-        const rawAction = await prediction.data();
-        return rawAction;
-    } finally {
-        stateTensor.dispose();
-    }
+        return prediction;
+    });
+    const result = await rawAction.array();
+    rawAction.dispose();
+    return result[0];
 }
 
 export function sampleBernoulli(p) {
