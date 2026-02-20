@@ -87,34 +87,29 @@ async function main() {
                 CONFIG.MIN_ENTROPY,
                 CONFIG.ENTROPY_COEFFICIENT * CONFIG.ENTROPY_DECAY
             );
+            
+            if (memory.buffer.length >= CONFIG.ROLLOUT_STEPS) { // e.g., set this to 2048 or 4096 in your config
+                log("Training...");
 
-            if (CONFIG.episodes % CONFIG.ROLLOUT_EPISODES == 0 && CONFIG.episodes > 0) {
-                if (memory.episodes() < CONFIG.ROLLOUT_EPISODES - 1) {
-                    log("Not enough episodes in memory to train.");
-                    memory.clear();
-                }
-                else {
-                    log("Training...");
+                const batch = memory.buffer.slice(0, CONFIG.ROLLOUT_STEPS);
 
-                    const batch = memory.getAll();
+                memory.buffer = memory.buffer.slice(CONFIG.ROLLOUT_STEPS);
 
-                    let result = null;
-                    result = await train(currentModel, batch, CONFIG.EPOCHS, true);
-                    if (result) {
-                        losses.push(result.lossActor);
-                        log(`Loss: ${result.lossActor.toFixed(4)}`);
-                        log(`Critic Loss: ${result.lossCritic.toFixed(4)}`);
-                    }
-
-                    memory.clear();
+                let result = await train(currentModel, batch, CONFIG.EPOCHS, true);
+                if (result) {
+                    losses.push(result.lossActor);
+                    log(`Loss: ${result.lossActor.toFixed(4)} | Critic Loss: ${result.lossCritic.toFixed(4)}`);
                 }
             }
-
 
             if (CONFIG.episodes % CONFIG.SAVE_AFTER_EPISODES === 0 && CONFIG.episodes > 0) {
                 models.push(cloneModel(currentModel));
                 if (models.length > CONFIG.MAX_SAVED_MODELS) {
-                    models.shift();
+                    const oldModel = models.shift();
+                    oldModel.actor.dispose();
+                    oldModel.critic.dispose();
+                    oldModel.optimizerActor.dispose();
+                    oldModel.optimizerCritic.dispose();
                 }
                 log(`Model checkpoint saved. Total checkpoints: ${models.length}`);
                 top.lastSave = await top.saveModelsString();
@@ -148,10 +143,10 @@ async function main() {
             if (models.length > 0) {
                 if (CONFIG.episodes % CONFIG.SWITCH_OPPONENT_EVERY_EPISODES === 0) {
                     const rand = Math.random();
-                    if (rand < 0.5) {
+                    if (rand < 0.15) {
                         p2Model = chooseOpponentByElo(models, currentModel.elo);
                     }
-                    else if (rand < 0.75) {
+                    else if (rand < 0.2) {
                         p2Model = Random.choose(models);
                     }
                     else {
@@ -162,7 +157,9 @@ async function main() {
 
             let lastActionP1 = null;
             let lastLogProbP1 = null;
+            let lastLogProbP2 = null;
             let lastActionP2 = null;
+            let p2Buffer = [];
             let entropies = [];
             while (true) {
                 CONFIG.steps++;
@@ -177,7 +174,7 @@ async function main() {
                 }
                 let rewardCurrentFrame = newState.reward();
                 let rewardP1 = rewardCurrentFrame.p1;
-
+                let rewardP2 = rewardCurrentFrame.p2;
 
                 if (safeFrames > CONFIG.MAX_SECONDS * 20) {
                     newState.done = true;
@@ -195,14 +192,21 @@ async function main() {
                 }
 
                 // DO NOT STORE P2 EXPERIENCES SINCE IT IS FROM A OLDER POLICY
-                // if (lastActionP2 !== null) {
-                //     memory.add(lastState.flip().toArray(),
-                //         lastActionP2,
-                //         rewardP2,
-                //         newState.flip().toArray(),
-                //         newState.done
-                //     );
-                // }
+                if (lastActionP2 !== null && p2Model === currentModel) {
+                    // memory.add(lastState.flip().toArray(),
+                    //     lastActionP2,
+                    //     rewardP2,
+                    //     newState.flip().toArray(),
+                    //     newState.done
+                    // );
+                    p2Buffer.push(memory.make(lastState.flip().toArray(),
+                        lastActionP2,
+                        lastLogProbP2,
+                        rewardP2,
+                        newState.flip().toArray(),
+                        newState.done
+                    ));
+                }
 
                 if (newState.done) {
                     break;
@@ -225,6 +229,7 @@ async function main() {
                 }
                 move(CONFIG.PLAYER_TWO_ID, actionP2);
                 lastActionP2 = actionToArray(actionP2);
+                lastLogProbP2 = await logProbabilities(logits2, lastActionP2);
 
                 safeFrames++;
                 lastState = newState;
@@ -232,6 +237,10 @@ async function main() {
 
                 // 20 FPS
                 await Time.sleep(50);
+            }
+
+            for(let exp of p2Buffer){
+                memory.add(exp.state, exp.action, exp.logProb, exp.reward, exp.nextState, exp.done);
             }
 
             if (newState?.done && p2Model && p2Model !== currentModel) {

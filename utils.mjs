@@ -1,6 +1,7 @@
 import { tf } from "./tf.mjs";
 
 
+
 export function logProbsBernoulli(logits, sampled) {
     // log(sigmoid(x)) = -softplus(-x)
     const logSigmoid = tf.softplus(logits.neg()).neg();

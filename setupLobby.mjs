@@ -23,6 +23,8 @@ export async function setupLobby() {
 
 export async function createLobby() {
     top.Gdocument.getElementById("classic_mid_sandbox").click();
+    top.Gdocument.getElementById("roomlistcreatewindowunlisted").click();
+    await Time.sleep(50);
     top.Gdocument.getElementById("roomlistcreatecreatebutton").click();
     await Time.sleep(3000);
     await setupLobby();

@@ -15,6 +15,10 @@ export class ReplayBuffer {
         );
     }
 
+    make(state, action, logProb, reward, nextState, done) {
+        return new Memory(state, action, logProb, reward, nextState, done);
+    }
+
     episodes(){
         return this.episodeCount;
     }

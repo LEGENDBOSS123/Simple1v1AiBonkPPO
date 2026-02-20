@@ -68,8 +68,11 @@ export function setupModel() {
 
 export function cloneModel(model) {
     const newModel = setupModel();
-    newModel.actor.setWeights(model.actor.getWeights());
-    newModel.critic.setWeights(model.critic.getWeights());
+    const actorWeights = model.actor.getWeights();
+    const criticWeights = model.critic.getWeights();
+    newModel.actor.setWeights(actorWeights);
+    newModel.critic.setWeights(criticWeights);
+    // getWeights() creates new tensor copies that must be disposed after setWeights
     newModel.elo = model.elo ?? newModel.elo;
     return newModel;
 }
@@ -130,6 +133,9 @@ export async function loadModelFromArtifacts(artifacts) {
     const criticWeights = tf.io.decodeWeights(new Float32Array(artifacts.critic.weightData).buffer, artifacts.critic.weightSpecs);
     model.actor.loadWeights(actorWeights);
     model.critic.loadWeights(criticWeights);
+    // decodeWeights creates tensors that are copied by loadWeights — dispose originals
+    tf.dispose(Object.values(actorWeights));
+    tf.dispose(Object.values(criticWeights));
 
     if (typeof artifacts.elo === "number") {
         model.elo = artifacts.elo;

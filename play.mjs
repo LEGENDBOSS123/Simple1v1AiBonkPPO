@@ -91,6 +91,7 @@ async function main() {
                 try {
                     const logits = top.actorModel.predict(stateTensor);
                     const logitsArray = await logits.array();
+                    logits.dispose();
                     const firstBatch = logitsArray[0];
                     const moves = firstBatch.map(x => x > 0);
                     playMove(moves);
@@ -102,7 +103,7 @@ async function main() {
                 }
             }
         }
-        await Time.sleep(80);
+        await Time.sleep(50);
     }
 }
 
